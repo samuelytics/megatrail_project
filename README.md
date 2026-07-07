@@ -13,7 +13,7 @@ You can then save the results using save_the_pickles, making sure to include the
 
 # Community Analysis
 
-I'm currently performing community analysis on the Chicago megatrail, in an effort to better grasp its overall structure. I initially used the Louvain algorithm, but found that the communities it formed were too granular to be useful. Geography-based k-means clustering did not pay attention to the connectivity of the nodes, and node2vec-based k-means clustering was too computationally intensive. As such, I am using Clauset-Newman-Moore greedy modularity maximization, as provided by the networkx library. I have created 2 collections using this map, one consisting of 7 communities and another consisting of 11.
+I'm currently performing community analysis on the Chicago megatrail, in an effort to better grasp its overall structure. I initially used the Louvain algorithm, but found that the communities it formed were too granular to be useful. Geography-based k-means clustering did not pay attention to the connectivity of the nodes, and node2vec-based k-means clustering was too computationally intensive. As such, I am using Clauset-Newman-Moore greedy modularity maximization, as provided by the networkx library. I have created 2 collections using this map, one consisting of 7 communities and another consisting of 12.
 
 For each collection of communities, I have measured the following metrics: 
 1. Total Distance: The kilometers of bike trail and sidewalk present within the community.
@@ -27,7 +27,7 @@ To perform this process and save the resulting metrics and geojsons that are nec
 
 # Visualization
 
-I have created a [website](https://sorinash.neocities.org/) for visualizing both maps of the communities along with bar graphs of their metrics (both for the 7 and 11-community collections), using a combination of Leaflet for geojson visualization and d3 for data visualization. 
+I have created a [website](https://sorinash.neocities.org/) for visualizing both maps of the communities along with bar graphs of their metrics (both for the 7 and 12-community collections), using a combination of Leaflet for geojson visualization and d3 for data visualization. 
 
 # Current efforts
 
