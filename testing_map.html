@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Megatrail Project</title>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+							 integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+							 crossorigin=""/>
+       <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+					 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+					 crossorigin=""></script>
+		<style>
+			* {
+			  box-sizing: border-box;
+			  margin: 0;
+			  padding: 0;
+			}
+
+			body {
+			  font-family: sans-serif;
+			  background: #ffffff;
+			  color: #000000;
+			}
+			
+			#main-container {
+			  display: flex;
+			  flex-direction: column;
+			  height: 100vh;
+			  width: 100%;
+			  z-index: 1;
+			}
+			
+			#menu-bar {
+			  display: flex;
+			  flex-direction: row;
+			  align-items: center;
+			  justify-content: space-between;
+			  padding: 10px 20px;
+			  background: #16181f;
+			  border-bottom: 1px solid #2a2d3a;
+			  width: 100%;
+			  height: 4%
+			}
+
+			#content-row {
+			width: auto;
+			  display: flex;
+			  flex-direction: row;
+			  flex: 1;
+			  overflow: hidden;
+			}
+
+
+			#left-column{
+				width: 30%;
+				flex: 2.5;
+				height: 100%;
+				overflow-y: auto;
+				background: #ffffff;
+				border-right: 1px solid black;
+				
+			}
+
+
+			
+			#central_column{
+				width: 70%;
+				height: 100%;
+				padding: 0px;
+				overflow: auto;
+				background: #ffffff
+			}
+			
+			#map{
+				width:100%;
+				height:70%;
+				object-fit: fill;
+				z-index: 2;
+			}
+			
+			#help-and-links {
+			  display: flex;
+			  align-items: center;
+			  gap: 20px;
+			}
+
+			#help-and-links a {
+			  color: #818cf8;
+			  font-size: 13px;
+			  text-decoration: none;
+			}
+			
+			#menus {
+			  color: #818cf8;
+			  font-size: 13px;
+			  text-decoration: none;
+			}
+
+			#loading-screen {
+				position: fixed;
+				top: 0;
+				left: 0;
+				z-index: 999;
+				width: 100%;
+				height: 100vh;
+				background-color: grey;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				opacity: 0.5;
+			}
+
+			#map-overlay {  
+				z-index: 10000; /* Leaflet's map controls use z-index 1000; adjust to 999 to place below */  
+			}  
+		 
+			/* Optional: Add background to overlay for better visibility */  
+			#map-overlay {  
+				background: rgba(255, 255, 255, 0.9); /* Semi-transparent white */  
+				padding: 0.5rem;  
+				border-radius: 0.5rem;  
+				box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Subtle shadow */  
+			}  
+		 
+			#explainer_row{
+				height : 30%;
+				border-top: 1px solid black;
+			}
+
+		</style>
+	</head>
+
+	<body>
+		<div id="loading-screen">
+			<h1>Loading...</h1>
+		</div>
+		<div id="main-container">
+			
+			<div id="menu-bar">
+				<div id="menus">
+					<label for="community_menu">Select the number of communities:</label>
+					<select name="community_menu" id="community_menu">
+						<option value="7" selected = "selected">7</option>
+						<option value="11">11</option>
+					</select>
+				</div>
+				<div id="help-and-links">
+					<a href="https://github.com/sorinash/megatrail_project">Writeup and code for analysis</a>
+				</div>
+			</div>
+			<div id="content-row">
+				<div id="left-column">
+					<div id="total_distance"></div>
+					<div id="convex_area"></div>
+					<div id="intersections_per_distance"></div>
+					<div id="miles_per_convex_hull_area"></div>
+					<div id="actual_bridges_per_convex_hull_area"></div>
+					<div id="actual_bridges_per_distance"></div>
+				</div>
+				<div id="central_column">
+				  <div id = "map">
+					<div id= "map-overlay" class="leaflet-top leaflet-right">
+						<div id ="buttons">
+							<input type="button" id="curr-loc" value="Show Current Location" class="btnStyle span3 leaflet-control" /> 
+							<br>
+							<input type="button" id="clear-loc" value="Clear Markers"  class="btnStyle span3 leaflet-control" />
+						</div>
+					</div>
+				  </div>
+				  <script src="d3.v7.js"></script>
+				  <script>
+					function placeholder(){
+						console.log("placeholder")
+					}
+				  </script>
+				  <script type="module">
+					var generalized = true;
+					var communities_layer = null;
+					var popup_layer = {};
+
+					
+					 var map = L.map('map').setView([41.856, -87.989], 9);
+					 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+							maxZoom: 19,
+							attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+							referrerPolicy: 'strict-origin-when-cross-origin'
+						})
+						.addTo(map);
+					
+					var popup = L.popup();
+					var layergroup = null;
+
+					function onMapClick(e){
+						if (generalized == false){
+							generalized = true
+						}
+						else {
+							communities_layer.eachLayer(function(layer){
+								layer.setStyle({opacity:1})
+							})
+						}
+					}
+					map.on('click', onMapClick);
+					
+					function onCommunityClick(e){
+						console.log(e.target.feature)
+						generalized = false
+						popup
+							.setLatLng(e.latlng)
+							.setContent("This is community #" + e.target.feature.properties.number)
+							.openOn(map);
+						communities_layer.eachLayer(function(layer){
+							//console.log(layer.feature)
+							//console.log('why')
+							var isClicked = true
+							var isClicked = layer.feature.properties.number === e.target.feature.properties.number
+							if (isClicked == true){
+								layer.setStyle({opacity: 1})
+							}
+							else{
+								layer.setStyle({opacity: 0.5})
+							}
+						})
+					}
+					
+					function onEachFeature(feature,layer){
+						layer.on({
+							click: onCommunityClick
+						});
+					}
+					
+					var final_load_in = {}
+					const color_palettes = ["#000000","#228b22","#00008b","#b03060","#ff0000","#ff8800","#de0087","#33cc33","#33ccaa","#ff00ff","#6495ed"]
+					async function load_in_geojsons(community_nums,prefixes){
+						var out_dict = {}
+						var use_json = 0
+						for (let j=0; j < prefixes.length; j++){
+							var use_list = []
+							for (let i=0; i < community_nums[j]; i++){
+								var filename = prefixes[j] + i + '.geojson'
+								use_json = await fetch(filename).then(response => response.json())
+								use_list.push(use_json)
+							}
+							out_dict[community_nums[j]] = use_list
+						}
+						final_load_in = out_dict
+						return out_dict
+					}
+					var honka_array = []
+					async function assemble_array_from_loaded_things(loaded_geojsons,number_of_files,index){
+						//if index is -1, assume general
+						var feature_array = []
+						
+						var input_jsons = loaded_geojsons[number_of_files]
+						
+						var opacity = 0.5
+						for (let i=0; i<number_of_files; i++){
+							if (i==index || index == -1){
+								opacity = 1
+							}
+							else{
+								opacity = 0.5
+							}
+							var color = color_palettes[i] 
+							var to_push = {"type":"Feature","geometry":input_jsons[i], "properties":{"color":color,"number":i,"opacity":opacity}}
+							//console.log(prom)
+							feature_array.push(to_push)
+						}
+						honka_array = feature_array
+						return feature_array
+					}
+					
+					async function create_geojson(feature_array){
+						var to_convert = {"type": "FeatureCollection", "features":feature_array}
+						var out_geojson = L.geoJSON(to_convert, {
+							onEachFeature: onEachFeature,
+							style: function(feature) {
+								return { 
+										color: feature.properties.color,
+										opacity: feature.properties.opacity,
+										number: feature.properties.number
+										}
+							}
+						})
+						return out_geojson
+					}
+					
+					async function add_geojson(use_geojson){
+						use_geojson.addTo(layergroup);
+					}
+					
+					async function clear_map(){
+						layergroup.clearLayers();
+						communities_layer = null;
+					}
+					
+					async function populate_map(use_result,number_of_files,index){
+						let result = await assemble_array_from_loaded_things(use_result, number_of_files,index)
+						layergroup = L.layerGroup().addTo(map)
+						let result_geojson = await create_geojson(result)
+						communities_layer = result_geojson
+						await add_geojson(result_geojson)
+						generalized = true
+						
+					}
+					
+
+
+					
+					const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+					
+					
+					//load_the_geojsons 
+					//	First, we await to assemble the array 
+					//		by going through folder, loading in prefix + i+ '.geojson'
+					//		fetches the filename, THEN converts that a json. 
+					//		creates an array of geojson features by moving to a to_push array with type:feature, geometry:promised_geojson, properties:{"color":color}
+					//	Second, takes the array called feature_array and inputs into create_json 
+					//		We create an overall featurecollection of type: FeatureCollection and the features: feature_array 
+					//		We use leaflet.geoJSON on the featurecollection, with style of feature(color) = feature.color . 
+					//		We output that geojson. 
+					//	Third, we addTo the geojson to the map. 
+
+					//d3 visualization functions
+					
+					const community_menu = d3.select("#community_menu")
+					
+					function select_from_columns(row,columnlist){
+						const output = []
+						for (let i=0; i < columnlist.length;i++){
+							output.push(row[columnlist[i]]);
+						}
+						return output
+					}
+
+					
+					function create_bar_graph(use_community,use_id,title,y_label){
+						var total_width = width + margin.left + margin.right;
+						var total_height = height + margin.top + margin.bottom;
+						var graph_svg = d3.select("#"+use_id)
+												.append("svg")
+												.attr("viewBox", "0 0 " + total_width + " " + total_height)
+												.style("width", "100%")
+												.style("height", "auto")
+												.style("display", "block")
+												.append("g")
+												.attr("transform",
+														"translate(" + margin.left + "," + margin.top + ")");
+						var number_list = [...Array(number_of_communities).keys()].map(x => use_id + "_" + x);
+						var community_label_list = [...Array(number_of_communities).keys()].map(x => "Community #"+x);
+						var graph_x = d3.scaleBand()
+										.range([0, width])
+										.domain(community_label_list)
+										.padding(0.2)
+										
+						graph_svg.append("rect")
+							.attr("width", width + margin.left + margin.right)
+							.attr("height", height + margin.top + margin.bottom)
+							.attr("x", -margin.left)
+							.attr("y", -margin.top)
+							.attr("fill", "#ffffff")
+						
+						graph_svg.append("g")
+							.attr("transform", "translate(0," + height + ")")
+							.call(d3.axisBottom(graph_x))
+							.selectAll("text")
+							.attr("transform", "translate(-10,0)rotate(-45)")
+							.style("text-anchor", "end")
+							.style("fill", "#a0a3b1")  
+							.style("font-size", "11px"); 
+						
+						var comm_heights = select_from_columns(use_community[0], number_list)
+						comm_heights = comm_heights.map(x => parseFloat(x))
+						var comm_highest_height = parseFloat(Math.max(...comm_heights) * 1.2)
+						
+						var feed_in_data = []
+						for (let i=0; i< comm_heights.length; i++){
+							feed_in_data.push({comm_label:community_label_list[i], comm_height: comm_heights[i], color: color_palettes[i]})
+						}
+						var graph_y = d3.scaleLinear()
+											.domain([0, comm_highest_height])
+											.range([height,0]);
+						graph_svg.append("g")
+										.call(d3.axisLeft(graph_y))
+										.selectAll("text")
+										.style("fill","#000000");
+						graph_svg.selectAll("genrebar")
+							.data(feed_in_data)
+							.enter()
+							.append("rect")
+								.attr("x", function(d) {return graph_x(d.comm_label)})
+								.attr("y", function(d) {return graph_y(d.comm_height)})
+								.attr("raw_y", function(d){return d.comm_height})
+								.attr("width", graph_x.bandwidth())
+								.attr("height", function(d) {return height - graph_y(d.comm_height)})
+								.attr("fill", function(d){return d.color})
+								.attr("id", function(d){return d.comm_label})
+								.on("mouseover", function(d){
+									console.log(d3.select(this).attr("raw_y"))
+									}
+								)
+								.on("click", function(){
+									const clickstring = d3.select(this).property("id")
+									const clickinfo = parseInt(clickstring.slice(11))
+									//console.log(clickinfo)
+									communities_layer.eachLayer(function(layer){
+										//console.log(layer.feature)
+										//console.log('why')
+										var isClicked = true
+										
+										var isClicked = layer.feature.properties.number === clickinfo
+										if (isClicked == true){
+											layer.setStyle({opacity: 1})
+										}
+										else{
+											layer.setStyle({opacity: 0.5})
+										}
+									})
+								})
+								
+						var title = graph_svg.append("text")
+										.attr("x", width/2 - (margin.left*0.05*title.length))
+										.attr("y", margin.top/2)
+										.text(title);
+
+						 graph_svg.append("text")
+							.attr("transform", "rotate(-90)")
+							.attr("x", -height / 2)
+							.attr("y", -margin.left + 15)
+							.attr("text-anchor", "middle")
+							.style("fill", "#000000")
+							.style("font-size", "12px")
+							.text(y_label);
+					}
+					
+					async function populate_bar_graphs(input_communities){
+						await create_bar_graph(input_communities, "total_distance", "Total Distance","km")
+						await create_bar_graph(input_communities, "convex_area", "Convex Area of Region","km^2")
+						await create_bar_graph(input_communities, "intersections_per_distance", "Intersections per Distance","intersections/km")
+						await create_bar_graph(input_communities, "miles_per_convex_hull_area", "Kilometers per Convex Hull Area","intersections/km^2")
+						await create_bar_graph(input_communities, "actual_bridges_per_convex_hull_area", "Bridge Intersections per Convex Hull Area", "bridges/km^2")
+						await create_bar_graph(input_communities, "actual_bridges_per_distance", "Bridge Intersections Per Distance", "bridges/km")
+					}
+					
+					function depopulate_bar_graphs(){
+						d3.select("#total_distance").select("svg").remove();
+						d3.select("#convex_area").select("svg").remove();
+						d3.select("#intersections_per_distance").select("svg").remove();
+						d3.select("#miles_per_convex_hull_area").select("svg").remove();
+						d3.select("#actual_bridges_per_convex_hull_area").select("svg").remove();
+						d3.select("#actual_bridges_per_distance").select("svg").remove();
+					}
+
+					
+					//taken from w3schools
+					let getLocationPromise = () => {
+						return new Promise(function (resolve, reject){
+							navigator.geolocation.getCurrentPosition(
+								(position) => {
+									got_location = 1
+									resolve(position)
+									current_location=[position.coords.latitude, position.coords.longitude]
+									},
+								(error) => {
+									got_location = 0
+									resolve(-1)
+								},
+								{
+									enableHighAccuracy: false, 
+									timeout: 60000,            
+									maximumAge: 60000          
+								}
+							);
+						});
+					};
+					async function getLocation() {
+						await getLocationPromise()
+							.then((res) => {
+								const {coords} = res;
+								//console.log(coords)
+								//console.log("why")
+								return coords
+							})
+					}
+					
+					
+					var loading_location = false
+					async function replaceLocation() {
+						if (loading_location == false){
+							loading_location = true
+							if (current_location != null && popup_layer[current_location[0], current_location[1]] != null){
+								await popup_layer[current_location[0], current_location[1]].removeFrom(map)
+								popup_layer[current_location[0], current_location[1]] = null
+							}
+							if (current_location == null){
+								console.log("Please enable location permissions in your browser.")
+							}
+							else{
+								await getLocation()	
+								var marker = L.marker([current_location[0], current_location[1]])
+								popup_layer[current_location[0], current_location[1]] = marker
+								await marker.addTo(map)
+								console.log("uhhhh")
+								await popup_layer[current_location[0], current_location[1]]
+										.on("click", () => 
+										{	
+											popup_layer[current_location[0], current_location[1]].removeFrom(map)
+											popup_layer[current_location[0], current_location[1]] = null
+											console.log("afwiuhe")
+										})
+								loading_location = false
+							}	
+						}
+					}
+					
+					async function clearMarkers(){
+						for (let marker in popup_layer){
+							if(popup_layer[marker] != null){
+								await popup_layer[marker].removeFrom(map)
+								popup_layer[marker] = null
+							}
+						}
+					}
+					
+					const margin = {top: 30, right: 30, bottom: 70, left: 60},
+								width = 400 - margin.left - margin.right,
+								height = 400 - margin.top - margin.bottom;
+
+					let geojsons_dict = {}
+					let communities_dict = {}
+					let got_location = 0
+					let current_location = null;
+
+								
+					var number_of_communities = 7;
+					
+					
+					//define infodict
+					var total_infodict = {}
+					
+					//define chicago_infodict
+					var chicago_infodict = {}
+					chicago_infodict["11"] = ["/csvs/11_communities/map_info_data.csv",'11_communities/7-6-2026_12_communities_']
+					chicago_infodict["7"] = ["/csvs/7_communities/map_info_data.csv",'7_communities/7-6-2026_redone_analysis_']
+					
+					//assign values
+					total_infodict["chicago"] = chicago_infodict
+					
+					
+					
+					
+
+					
+					//geojsons_dict["11"] = geojsons_11
+					//communities_dict["11"] = eleven_communities
+					//geojsons_dict["7"] = geojsons_7
+					//communities_dict["7"] = seven_communities
+					
+					let current_city = "chicago"
+					let current_value = document.getElementById("community_menu").value
+					var change_location = d3.selectAll("#curr-loc")
+					var clear_location = d3.selectAll("#clear-loc")
+					
+					
+					
+					
+					//const eleven_communities = await d3.dsv(",", total_infodict[current_city][current_value][0]).then(()=> console.log(eleven_communities))
+					
+					load_in_geojsons([current_value], [total_infodict[current_city][current_value][1]])
+						.then(result => geojsons_dict[current_value] = result)
+						.then(() => d3.dsv(",",total_infodict[current_city][current_value][0]))
+						.then(result => communities_dict[current_value] = result)
+						.then(() => populate_map(geojsons_dict[current_value], parseInt(current_value), -1))
+						.then(() => number_of_communities = parseInt(current_value))
+						.then(() => populate_bar_graphs(communities_dict[current_value]))
+						.then(() => community_menu.on("change", async function () {
+									  const selectedValue = d3.select(this).property("value");
+
+									  depopulate_bar_graphs();
+									  clear_map();
+
+									  if (selectedValue in communities_dict === false) {
+										const [communities, geojson] = await Promise.all([
+										  d3.dsv(",", total_infodict[current_city][selectedValue][0]),
+										  load_in_geojsons([selectedValue], [total_infodict[current_city][selectedValue][1]])
+										]);
+										//console.log(communities)
+										communities_dict[selectedValue] = communities;
+										geojsons_dict[selectedValue] = geojson;
+									  }
+
+									  number_of_communities = parseInt(selectedValue);
+
+									  populate_bar_graphs(communities_dict[selectedValue]);
+									  populate_map(geojsons_dict[selectedValue], parseInt(selectedValue), -1);
+									}))
+						.then(() => getLocation())
+						.then(() => {
+							if (got_location === 1){
+								var marker = L.marker([current_location[0], current_location[1]])
+								popup_layer[current_location[0], current_location[1]] = marker
+								marker.addTo(map)
+							}
+						})
+						.then(() => {
+							if (got_location === 1){
+							popup_layer[current_location[0], current_location[1]]
+								.on("click", () => 
+								{	
+									popup_layer[current_location[0], current_location[1]].removeFrom(map)
+									popup_layer[current_location[0], current_location[1]] = null
+								})}
+							})
+						.then(() => change_location.on("click", () => {replaceLocation()}))
+						.then(() => clear_location.on("click", () => {clearMarkers()}))
+						.then(() => document.getElementById("loading-screen").style.display = "none")
+						.then(() => function(){
+							const loading = document.getElementById("loading-screen")
+							loading.style.opacity = 0
+						})
+					
+					//console.log(current_location)
+					;
+				  </script>
+				  <div id="explainer_row">
+					<br>
+					<p>Welcome to the Chicago Megatrail Project</p> 
+					<br>
+					<p>This is a map of the largest connected network of sidewalks, bike/pedestrian trails, and crosswalks in the Chicagoland region!</p>
+					<br>
+					<p>I've also included some analysis of the map data in the column to the left. For more information on what those bar graphs are measuring, click the "Writeup for Code and Analysis" link in the top!</p>
+					<br>
+					<p>If you would like to highlight a community on the map, either click the bar for the community in one of the graphs to the left, or click the community on the map itself.</p> 
+					<br>
+					<p>If you're trying to use this site for navigation and you'd like to see your current position, just click "show current location."</p>
+					<br>
+					<p>If you're doing that and the marker isn't showing up, be sure to allow the site to access your location. Your location information is not stored on my end.</p>
+				  </div>
+				</div>
+			</div>
+		</div>
+	</body>
+   
+</html>
