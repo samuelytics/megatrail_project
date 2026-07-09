@@ -29,7 +29,38 @@ To perform this process and save the resulting metrics and geojsons that are nec
 
 I have created a [website](https://sorinash.neocities.org/) for visualizing both maps of the communities along with bar graphs of their metrics (both for the 7 and 12-community collections), using a combination of Leaflet for geojson visualization and d3 for data visualization. 
 
+# Findings
+
+Across the two community analyses, a few things stick out: 
+
+## Community Structure of Chicago
+
+As to be expected, the City of Chicago and its immediate environs form the largest community (or communities) in the entire Megatrail, boasting the greatest amount of sidewalk/bike trails out of all other communities in the region. Curiously, upon increasing the resolution of the community-finding algorithm, we see that the North Side and the South Side of Chicago form their own distinct communities, with the south branch of the Chicago River and the Adlai Stevenson Expressway forming the boundary between the two. 
+
+## Omission of Northern and Southern Suburbs
+
+While the Chicago Megatrail extends southeast into Indiana, it does not reach into the southern suburbs, such as Orland Park. A combination of the Tri-State Tollway, the Indiana Harbor Mainline, and the Elsdon Subdivision appear to form a boundary on the east, and the Chicago Sanitary and Ship Canal form the western edge. While it is likely that the eastern boundary is due to mapping issues (the presence of overpasses over certain sidewalks in the Hickory Hills/Palos Hills region may have prevented the sidewalks from being properly mapped), I could not find any connections from the Chicago Megatrail  into Lemont or Lockport on Google Maps. 
+
+Additionally, we do not see the Megatrail extend into the north-central suburbs, such as Lake Zurich.
+
+## Presence of Dense Outskirt Communities
+
+At higher resolutions, we begin to see the presence of small communities towards the outskirts of the Chicago Megatrail, such as those in Plainfield and Romeoville, that boast relatively high density of sidewalks/trails per square kilometer of convex hull area. These communities likely arise due to the few connections they have to the rest of the trail; both communities connect to the Naperville community at a single point. The communities also appear to be predominately residential, suggesting that these are individual neighborhoods or collections of neighborhoods that bear a tenuous connection to the greater Megatrail.
+
+## Naperville as Distinct Community
+
+Out of the communities that form in the Chicago suburbs, Naperville appears as a distinct entity, particularly as resolution increases; it appears to sport the highest density and lowest number of bridge intersections per kilometer measurements out of any of the communities, save for those in the city of Chicago itself and the previously mentioned dense outskirt communities, suggesting a high degree of connectivity. It would be interesting to see how Naperville is visualized at higher resolutions; I hypothesize that it would remain a large, single community, even as other communities continue to be subdivided. 
+
+# Limitations
+
+The primary limitation of this project is the fact that it relies on OSM data. While the OSM community is quite thorough in teir mapping efforts, certain areas (such as sidewalks in suburban regions) can be neglected. This trend is quite noticeable in certain communities; for instance, the northeastern community (Waukegan, North Chicago, etc) appears to be clustered around the Des Plaines River Trail. 
+
+Additionally, the manner in which OSM data is set up can be somewhat inconsistent; nodes are not always consistent distances away from each other. This means that some networks may have an unusually high number of interconnected nodes, which may alter the behavior of the community-detection algorithm. To alleviate this inconsistency, it might be better to delineate trails and sidewalks using intersections and dead-ends for the purposes of community detection, to at least ensure that there is a consistent manner in which the Megatrail's graph is constructed. I already use such a representation for finding bridge intersections in the graph already. That being said, it should be noted that this more stripped-down representation would not necessarily be useful for certain metrics, such as finding the total distance of trails/sidewalks in a community; two connected intersections may be close to one another as the crow flies, but may still be separated by miles of trail (see, for instance, the Great Western Trail connecting Campton Hills to Sycamore). 
+
+
 # Current efforts
 
-1. Continue editing the website for better legibility and efficiency, consider additional metrics to use. 
-2. Create additional datasets for other cities/regions, and get more resolutions for communities. 
+1. Add higher resolutions to Chicago megatrail analyses.
+2. Reconsider community construction methods; might be better to eliminate connecting nodes and only use intersections/dead ends. Compare these two.
+3. Work with OSM community to get better mapping of area sidewalks and bike trails.
+4. Try pipeline on other regions of the United States. 
