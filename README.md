@@ -1,4 +1,4 @@
-The Megatrail project is my attempt to detail the largest connected component of a network consisting of bike/hiking trails, sidewalks, and designated pedestrian crossings in a given region of the world, which I dub a "megatrail" for the purposes of this project. In this script, I use Chicago as an example. 
+The Megatrail project is my attempt to detail the largest connected component of a network consisting of bike/hiking trails, sidewalks, and designated pedestrian crossings in a given region of the world, which I dub a "megatrail" for the purposes of this project. The webpage for this may be accessed at https://chicagomegatrail.neocities.org/ . In this script, I use Chicago as an example. 
 
 This currently consists of 3 parts.
 
