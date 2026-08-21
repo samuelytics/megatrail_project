@@ -28,7 +28,7 @@ To perform this process and save the resulting metrics and geojsons that are nec
 
 # Visualization
 
-I have created a [website](https://sorinash.neocities.org/) for visualizing both maps of the communities along with bar graphs of their metrics (both for the 7 and 12-community collections), using a combination of Leaflet for geojson visualization and d3 for data visualization. 
+I have created a [website](https://chicagomegatrail.neocities.org/) for visualizing both maps of the communities along with bar graphs of their metrics (both for the 7 and 12-community collections), using a combination of Leaflet for geojson visualization and d3 for data visualization. 
 
 # Preliminary Findings
 
