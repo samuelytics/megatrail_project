@@ -137,10 +137,13 @@
 			
 			<div id="menu-bar">
 				<div id="menus">
+					<label for="metric_menu">Select a metric:</label>
+					<select name="metric_menu" id="metric_menu">
+						<option value="community_number" selected = "selected">Community Count</option>
+						<option value="resolution">Resolution</option>
+					</select>
 					<label for="community_menu">Select the number of communities:</label>
 					<select name="community_menu" id="community_menu">
-						<option value="7" selected = "selected">7</option>
-						<option value="11">11</option>
 					</select>
 				</div>
 				<div id="help-and-links">
@@ -253,14 +256,16 @@
 						var input_jsons = loaded_geojsons[number_of_files]
 						
 						var opacity = 0.5
+						console.log('weh')
 						for (let i=0; i<number_of_files; i++){
+							console.log('errrr')
 							if (i==index || index == -1){
 								opacity = 1
 							}
 							else{
 								opacity = 0.5
 							}
-							var color = color_palettes[i] 
+							var color = color_palettes[i % color_palettes.length] 
 							var to_push = {"type":"Feature","geometry":input_jsons[i], "properties":{"color":color,"number":i,"opacity":opacity}}
 							//console.log(prom)
 							feature_array.push(to_push)
@@ -270,6 +275,7 @@
 					}
 					
 					async function create_geojson(feature_array){
+						console.log("oh no, please, nooooo!")
 						var to_convert = {"type": "FeatureCollection", "features":feature_array}
 						var out_geojson = L.geoJSON(to_convert, {
 							onEachFeature: onEachFeature,
@@ -304,7 +310,17 @@
 					}
 					
 
-
+					//load_in_geojsons([11],['11_communities/06_10_2026_'])
+					//	.then(result => geojsons_11 = result)
+					//	.then(result => assemble_array_from_loaded_things(geojsons_11, 11,-1))
+					//	.then(layergroup = L.layerGroup().addTo(map))
+					//	.then(result => create_geojson(result))
+					//	.then(result => {
+					//					communities_layer = result
+					//					add_geojson(result)})
+					//	.then(result => map.eachLayer(function(layer){console.log('awfe')}))
+					//	.then(generalized=true)
+					//	.then(setTimeout(()=>{clear_map();},3000));
 					
 					const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 					
@@ -374,7 +390,7 @@
 						
 						var feed_in_data = []
 						for (let i=0; i< comm_heights.length; i++){
-							feed_in_data.push({comm_label:community_label_list[i], comm_height: comm_heights[i], color: color_palettes[i]})
+							feed_in_data.push({comm_label:community_label_list[i], comm_height: comm_heights[i], color: color_palettes[i % color_palettes.length]})
 						}
 						var graph_y = d3.scaleLinear()
 											.domain([0, comm_highest_height])
@@ -389,15 +405,10 @@
 							.append("rect")
 								.attr("x", function(d) {return graph_x(d.comm_label)})
 								.attr("y", function(d) {return graph_y(d.comm_height)})
-								.attr("raw_y", function(d){return d.comm_height})
 								.attr("width", graph_x.bandwidth())
 								.attr("height", function(d) {return height - graph_y(d.comm_height)})
 								.attr("fill", function(d){return d.color})
 								.attr("id", function(d){return d.comm_label})
-								.on("mouseover", function(d){
-									console.log(d3.select(this).attr("raw_y"))
-									}
-								)
 								.on("click", function(){
 									const clickstring = d3.select(this).property("id")
 									const clickinfo = parseInt(clickstring.slice(11))
@@ -412,6 +423,8 @@
 											layer.setStyle({opacity: 1})
 										}
 										else{
+											console.log(clickinfo)
+											console.log(layer.feature.properties.number)
 											layer.setStyle({opacity: 0.5})
 										}
 									})
@@ -463,6 +476,7 @@
 								(error) => {
 									got_location = 0
 									resolve(-1)
+									console.log("FARRRRRRRRRD")
 								},
 								{
 									enableHighAccuracy: false, 
@@ -498,6 +512,7 @@
 								await getLocation()	
 								var marker = L.marker([current_location[0], current_location[1]])
 								popup_layer[current_location[0], current_location[1]] = marker
+								//marker.on("click", () => {console.log("RIGHT IN THE CAR DOOR")})
 								await marker.addTo(map)
 								console.log("uhhhh")
 								await popup_layer[current_location[0], current_location[1]]
@@ -530,97 +545,229 @@
 					let got_location = 0
 					let current_location = null;
 
-								
 					var number_of_communities = 7;
-					
-					
-					//define infodict
-					var total_infodict = {}
-					
-					//define chicago_infodict
-					var chicago_infodict = {}
-					chicago_infodict["11"] = ["/csvs/11_communities/map_info_data.csv",'11_communities/7-6-2026_12_communities_']
-					chicago_infodict["7"] = ["/csvs/7_communities/map_info_data.csv",'7_communities/7-6-2026_redone_analysis_']
-					
-					//assign values
-					total_infodict["chicago"] = chicago_infodict
-					
-					
-					
-					
 
-					
-					//geojsons_dict["11"] = geojsons_11
-					//communities_dict["11"] = eleven_communities
-					//geojsons_dict["7"] = geojsons_7
-					//communities_dict["7"] = seven_communities
-					
-					let current_city = "chicago"
-					let current_value = document.getElementById("community_menu").value
+					// ---------------------------------------------------------------
+					// METRIC CONFIGURATION
+					// ---------------------------------------------------------------
+					// To add a brand-new metric (beyond community_number / resolution):
+					//   1. Add a folder under /csvs/<folder_name>/ and /geojsons/<folder_name>/
+					//   2. Inside /geojsons/<folder_name>/, add a manifest file named
+					//      "_index.json" containing a JSON array of the subfolder names
+					//      that live inside that metric folder, e.g.:
+					//        ["6_communities","8_communities","10_communities"]
+					//      or
+					//        ["0.0001_resolution","0.0002_resolution"]
+					//   3. Each subfolder must contain:
+					//        - a csv named "<subfolder_name>_map_info_data.csv"
+					//        - geojsons named "<subfolder_name>_0.geojson",
+					//          "<subfolder_name>_1.geojson", ... (zero-indexed, contiguous)
+					//   4. Add an entry to the "metrics" object below (key -> config)
+					//   5. Add a matching <option value="key">Label</option> to
+					//      #metric_menu in the HTML.
+					// Once that's done, adding/removing subfolders (e.g. a new
+					// resolution value, or more communities) requires ONLY updating
+					// the folder contents and the "_index.json" manifest - no code
+					// changes needed.
+					// ---------------------------------------------------------------
+					const metrics = {
+						"community_number": {
+							label: "Community Count",
+							folder: "community_number",
+							// For this metric, the subfolder name itself encodes the
+							// number of geojsons (e.g. "6_communities" -> 6), so we
+							// don't need to probe the folder to find the count.
+							isCommunityCount: true
+						},
+						"resolution": {
+							label: "Resolution",
+							folder: "resolution",
+							isCommunityCount: false
+						}
+					}
+
+					var current_metric = "community_number";
+
+					// total_infodict[metric][subfolder] = [csvPath, geojsonPrefix, count]
+					var total_infodict = {}
+
+					const metric_menu = d3.select("#metric_menu")
+
+					// -------------------- manifest / discovery helpers --------------------
+
+					async function fetch_manifest(metric_key){
+						var folder = metrics[metric_key].folder
+						var manifest_path = "/geojsons/" + folder + "/_index.json"
+						var response = await fetch(manifest_path)
+						if (!response.ok){
+							console.log("Could not load manifest at " + manifest_path)
+							return []
+						}
+						return await response.json()
+					}
+
+					function get_community_count_from_name(subfolder){
+						var match = subfolder.match(/^(\d+)/)
+						return match ? parseInt(match[1], 10) : 0
+					}
+
+					async function probe_geojson_count(metric_folder, subfolder){
+						var count = 0
+						while (true){
+							var filename = "/geojsons/" + metric_folder + "/" + subfolder + "/" + subfolder + "_" + count + ".geojson"
+							var response = await fetch(filename, {method: "HEAD"})
+							if (!response.ok){
+								break
+							}
+							count++
+						}
+						return count
+					}
+
+					// Builds total_infodict[metric_key] and returns [{value, label}, ...]
+					// for populating the community_menu dropdown.
+					async function build_metric_options(metric_key){
+						var metric = metrics[metric_key]
+						var subfolders = await fetch_manifest(metric_key)
+						var options = []
+						total_infodict[metric_key] = {}
+
+						for (let sub of subfolders){
+							var count
+							if (metric.isCommunityCount){
+								count = get_community_count_from_name(sub)
+							}
+							else{
+								count = await probe_geojson_count(metric.folder, sub)
+							}
+
+							var csv_path = "/csvs/" + metric.folder + "/" + sub + "/" + sub + "_map_info_data.csv"
+							var geojson_prefix = "/geojsons/" + metric.folder + "/" + sub + "/" + sub + "_"
+
+							total_infodict[metric_key][sub] = [csv_path, geojson_prefix, count]
+
+							var label = metric.isCommunityCount
+								? String(count)
+								: sub + " (" + count + " communities)"
+
+							options.push({value: sub, label: label})
+						}
+
+						return options
+					}
+
+					// -------------------- dropdown population --------------------
+
+					function populate_community_menu_dom(options, preferred_value){
+						community_menu.selectAll("option").remove()
+
+						community_menu.selectAll("option")
+							.data(options)
+							.enter()
+							.append("option")
+							.attr("value", d => d.value)
+							.property("selected", d => d.value === preferred_value)
+							.text(d => d.label)
+
+						var selected_option = options.find(o => o.value === preferred_value)
+						return selected_option ? selected_option.value : (options.length ? options[0].value : null)
+					}
+
+					// -------------------- loading + rendering --------------------
+
+					async function ensure_metric_value_loaded(metric_key, subfolder){
+						if (!(metric_key in geojsons_dict)){
+							geojsons_dict[metric_key] = {}
+						}
+						if (!(metric_key in communities_dict)){
+							communities_dict[metric_key] = {}
+						}
+
+						if (!(subfolder in geojsons_dict[metric_key]) || !(subfolder in communities_dict[metric_key])){
+							var [csv_path, geojson_prefix, count] = total_infodict[metric_key][subfolder]
+
+							const [communities, geojson] = await Promise.all([
+								d3.dsv(",", csv_path),
+								load_in_geojsons([count], [geojson_prefix])
+							])
+
+							communities_dict[metric_key][subfolder] = communities
+							geojsons_dict[metric_key][subfolder] = geojson
+						}
+					}
+
+					async function load_and_render(metric_key, subfolder){
+						await ensure_metric_value_loaded(metric_key, subfolder)
+
+						var count = total_infodict[metric_key][subfolder][2]
+
+						depopulate_bar_graphs()
+						if (layergroup != null){
+							clear_map()
+						}
+
+						number_of_communities = count
+
+						populate_map(geojsons_dict[metric_key][subfolder], count, -1)
+						populate_bar_graphs(communities_dict[metric_key][subfolder])
+					}
+
+					// -------------------- wiring --------------------
+
+					async function switch_metric(metric_key, preferred_value){
+						current_metric = metric_key
+						var options = await build_metric_options(metric_key)
+						var chosen_value = populate_community_menu_dom(options, preferred_value)
+						if (chosen_value != null){
+							await load_and_render(metric_key, chosen_value)
+						}
+					}
+
+					community_menu.on("change", async function(){
+						const selected_value = d3.select(this).property("value")
+						await load_and_render(current_metric, selected_value)
+					})
+
+					metric_menu.on("change", async function(){
+						const selected_metric = d3.select(this).property("value")
+						await switch_metric(selected_metric, null)
+					})
+
 					var change_location = d3.selectAll("#curr-loc")
 					var clear_location = d3.selectAll("#clear-loc")
-					
-					
-					
-					
-					//const eleven_communities = await d3.dsv(",", total_infodict[current_city][current_value][0]).then(()=> console.log(eleven_communities))
-					
-					load_in_geojsons([current_value], [total_infodict[current_city][current_value][1]])
-						.then(result => geojsons_dict[current_value] = result)
-						.then(() => d3.dsv(",",total_infodict[current_city][current_value][0]))
-						.then(result => communities_dict[current_value] = result)
-						.then(() => populate_map(geojsons_dict[current_value], parseInt(current_value), -1))
-						.then(() => number_of_communities = parseInt(current_value))
-						.then(() => populate_bar_graphs(communities_dict[current_value]))
-						.then(() => community_menu.on("change", async function () {
-									  const selectedValue = d3.select(this).property("value");
 
-									  depopulate_bar_graphs();
-									  clear_map();
+					async function init(){
+						// Prefer "10_communities" on first load to match the site's
+						// previous default, otherwise fall back to the first option.
+						var options = await build_metric_options(current_metric)
+						var preferred = options.find(o => o.value === "10_communities") ? "10_communities" : null
+						var chosen_value = populate_community_menu_dom(options, preferred)
+						if (chosen_value != null){
+							await load_and_render(current_metric, chosen_value)
+						}
 
-									  if (selectedValue in communities_dict === false) {
-										const [communities, geojson] = await Promise.all([
-										  d3.dsv(",", total_infodict[current_city][selectedValue][0]),
-										  load_in_geojsons([selectedValue], [total_infodict[current_city][selectedValue][1]])
-										]);
-										//console.log(communities)
-										communities_dict[selectedValue] = communities;
-										geojsons_dict[selectedValue] = geojson;
-									  }
-
-									  number_of_communities = parseInt(selectedValue);
-
-									  populate_bar_graphs(communities_dict[selectedValue]);
-									  populate_map(geojsons_dict[selectedValue], parseInt(selectedValue), -1);
-									}))
-						.then(() => getLocation())
-						.then(() => {
-							if (got_location === 1){
-								var marker = L.marker([current_location[0], current_location[1]])
-								popup_layer[current_location[0], current_location[1]] = marker
-								marker.addTo(map)
-							}
-						})
-						.then(() => {
-							if (got_location === 1){
+						await getLocation()
+						if (got_location === 1){
+							var marker = L.marker([current_location[0], current_location[1]])
+							popup_layer[current_location[0], current_location[1]] = marker
+							marker.addTo(map)
 							popup_layer[current_location[0], current_location[1]]
-								.on("click", () => 
-								{	
+								.on("click", () =>
+								{
 									popup_layer[current_location[0], current_location[1]].removeFrom(map)
 									popup_layer[current_location[0], current_location[1]] = null
-								})}
-							})
-						.then(() => change_location.on("click", () => {replaceLocation()}))
-						.then(() => clear_location.on("click", () => {clearMarkers()}))
-						.then(() => document.getElementById("loading-screen").style.display = "none")
-						.then(() => function(){
-							const loading = document.getElementById("loading-screen")
-							loading.style.opacity = 0
-						})
-					
-					//console.log(current_location)
-					;
-				  </script>
+									console.log("afwiuhe")
+								})
+						}
+
+						change_location.on("click", () => {replaceLocation()})
+						clear_location.on("click", () => {clearMarkers()})
+
+						document.getElementById("loading-screen").style.display = "none"
+					}
+
+					init()
+					</script>
 				  <div id="explainer_row">
 					<br>
 					<p>Welcome to the Chicago Megatrail Project</p> 
