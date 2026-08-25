@@ -6,8 +6,8 @@ def load_pickle(filename):
     return b
 def dump_pickle(filepath, filename, var, warn=True): 
     current_folder = os.getcwd()
-    os.chdir(filepath)
-    if filename in os.listdir(os.getcwd()) and warn: 
+    #os.chdir(filepath)
+    if filename in os.listdir(filepath) and warn: 
         okay = 'O'
         while okay.lower() not in ['y','n']: 
             okay = input("WARNING: Filename is already present in directory. Overwrite? Y/N: ")
