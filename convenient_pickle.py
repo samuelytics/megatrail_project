@@ -14,6 +14,6 @@ def dump_pickle(filepath, filename, var, warn=True):
         if okay.lower() == 'n':
             os.chdir(current_folder)
             return
-    with open(filepath+filename,'wb') as handle:
+    with open(os.path.join(filepath,filename),'wb') as handle:
         pickle.dump(var, handle)
     return
