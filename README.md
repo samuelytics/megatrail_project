@@ -34,7 +34,8 @@ I have created a [website](https://chicagomegatrail.neocities.org/) for visualiz
 
 ## Finding communities at varying resolutions alters the shape and distribution of communities when compared to finding communities at varying cutoff points. 
 
-Broadly speaking, using small resolutions to find small numbers of communities creates larger, "blockier" communities than using defined cutoff points. Using a resolution of 1 and defining the cutoff points to define the number of communities results in a number of communities radiating outwards from the city of Chicago, whereas using smaller resolutions and no defined cutoff points to create 7 and 12 communities divided Chicago into, at most, two communities. Further analysis will be performed to determine distinctions between these methods (both in terms of qualitative observation, quantitative analysis, and overall utility). 
+Broadly speaking, using small resolutions to find small numbers of communities creates larger, "blockier" communities than using defined cutoff points. Using a resolution of 1 and defining the cutoff points to define the number of communities results in a number of communities radiating outwards from the city of Chicago, whereas using smaller resolutions and no defined cutoff points to create 7-21 communities divided Chicago into, at most, two communities. This is likely due to how the Clauset-Newman-Moore algorithm functions; setting the resolution to 1 without imposing a strict numbers would create a hierarchy of hundreds of far smaller communities. Thus the communities formed by imposing a hard number are agglomerations of those smaller communities. Using resolution to partition the megatrail, by contrast, results in large communities being generated as a baseline. 
+
 
 ## Communities within the City of Chicago have the densest amount of pedestrian/cyclist infrastructure
 
@@ -48,8 +49,8 @@ In the western suburbs, the Fox River Trail provides a visible backbone for mult
 
 # Current efforts
 
-1. Compare community-size- and resolution- based methods of partitioning in terms of utility and metrics.
-2. Determine consistency of nodes as a measure of distance (ie, how certain can we be that there are X number of nodes in a mile; this can help with additional metric down the line). 
+1. Discuss relative utility of different methods of community partitioning with people who have a better grasp of the city of Chicago. 
+2. Determine consistency of nodes as a measure of distance (ie, how certain can we be that there are X number of nodes in a mile; this can help with additional metrics down the line). 
 3. Reconfigure metrics, particularly regarding bridge intersections.
 4. Consider city- or town-based metrics as well, such as "proportion of town that's in a community" or "number of towns in a community." Could extend to neighborhood-based 
 5. Work with OSM community to get better mapping of area sidewalks and bike trails.
