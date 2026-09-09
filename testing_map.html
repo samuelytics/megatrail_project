@@ -147,7 +147,7 @@
 					</select>
 				</div>
 				<div id="help-and-links">
-					<a href="https://github.com/sorinash/megatrail_project">Writeup and code for analysis</a>
+					<a href="https://github.com/samuelytics/megatrail_project">Writeup and code for analysis</a>
 				</div>
 			</div>
 			<div id="content-row">
@@ -158,6 +158,11 @@
 					<div id="miles_per_convex_hull_area"></div>
 					<div id="actual_bridges_per_convex_hull_area"></div>
 					<div id="actual_bridges_per_distance"></div>
+					<div id="bike_mileage_km"></div>
+					<div id="bike_percentage"></div>
+					<div id="raw_median"></div>
+					<div id="raw_average"></div>
+					<div id="representative_average"></div>
 				</div>
 				<div id="central_column">
 				  <div id = "map">
@@ -384,10 +389,17 @@
 							.style("fill", "#a0a3b1")  
 							.style("font-size", "11px"); 
 						
+
+						console.log(number_list)
+
 						var comm_heights = select_from_columns(use_community[0], number_list)
 						comm_heights = comm_heights.map(x => parseFloat(x))
 						var comm_highest_height = parseFloat(Math.max(...comm_heights) * 1.2)
 						
+
+						console.log(use_community[0])
+						console.log(comm_heights)
+						console.log('-----')
 						var feed_in_data = []
 						for (let i=0; i< comm_heights.length; i++){
 							feed_in_data.push({comm_label:community_label_list[i], comm_height: comm_heights[i], color: color_palettes[i % color_palettes.length]})
@@ -445,13 +457,19 @@
 							.text(y_label);
 					}
 					
-					async function populate_bar_graphs(input_communities){
+					async function populate_bar_graphs(input_communities,input_bike_share,input_bike_distance){
 						await create_bar_graph(input_communities, "total_distance", "Total Distance","km")
 						await create_bar_graph(input_communities, "convex_area", "Convex Area of Region","km^2")
 						await create_bar_graph(input_communities, "intersections_per_distance", "Intersections per Distance","intersections/km")
 						await create_bar_graph(input_communities, "miles_per_convex_hull_area", "Kilometers per Convex Hull Area","intersections/km^2")
 						await create_bar_graph(input_communities, "actual_bridges_per_convex_hull_area", "Bridge Intersections per Convex Hull Area", "bridges/km^2")
 						await create_bar_graph(input_communities, "actual_bridges_per_distance", "Bridge Intersections Per Distance", "bridges/km")
+						await create_bar_graph(input_bike_share, "bike_mileage_km", "Total Length of Bike Trails", "km")
+						await create_bar_graph(input_bike_share, "bike_percentage", "Percentage of Bike Trails", "%")
+						await create_bar_graph(input_bike_distance, "raw_median", "Unweighted Median Distance to Bike Infrastructure", "km")
+						await create_bar_graph(input_bike_distance, "raw_average", "Unweighted Average Distance to Bike Infrastructure", "km")
+						await create_bar_graph(input_bike_distance, "representative_average", "Frequency-Weighted Average Distance to Bike Infrastructure", "km")
+						console.log('test')
 					}
 					
 					function depopulate_bar_graphs(){
@@ -476,7 +494,7 @@
 								(error) => {
 									got_location = 0
 									resolve(-1)
-									console.log("FARRRRRRRRRD")
+									console.log("error")
 								},
 								{
 									enableHighAccuracy: false, 
@@ -642,9 +660,11 @@
 							}
 
 							var csv_path = "/csvs/" + metric.folder + "/" + sub + "/" + sub + "_map_info_data.csv"
+							var csv_bike_share_path = "/csvs/" + metric.folder + "/" + sub + "/" + sub + "_bike_share_data.csv"
+							var csv_distance_to_trail = "/csvs/" + metric.folder + "/" + sub + "/" + sub + "_distance_to_bike_trail.csv"
 							var geojson_prefix = "/geojsons/" + metric.folder + "/" + sub + "/" + sub + "_"
 
-							total_infodict[metric_key][sub] = [csv_path, geojson_prefix, count]
+							total_infodict[metric_key][sub] = [csv_path, csv_bike_share_path, csv_distance_to_trail, geojson_prefix, count]
 
 							var label = metric.isCommunityCount
 								? String(count)
@@ -684,14 +704,16 @@
 						}
 
 						if (!(subfolder in geojsons_dict[metric_key]) || !(subfolder in communities_dict[metric_key])){
-							var [csv_path, geojson_prefix, count] = total_infodict[metric_key][subfolder]
+							var [csv_path, csv_bike_share_path, csv_distance_to_trail, geojson_prefix, count] = total_infodict[metric_key][subfolder]
 
-							const [communities, geojson] = await Promise.all([
+							const [communities, bike_share, distance_to_trail, geojson] = await Promise.all([
 								d3.dsv(",", csv_path),
+								d3.dsv(",", csv_bike_share_path),
+								d3.dsv(",", csv_distance_to_trail),
 								load_in_geojsons([count], [geojson_prefix])
 							])
 
-							communities_dict[metric_key][subfolder] = communities
+							communities_dict[metric_key][subfolder] = [communities, bike_share, distance_to_trail]
 							geojsons_dict[metric_key][subfolder] = geojson
 						}
 					}
@@ -699,7 +721,7 @@
 					async function load_and_render(metric_key, subfolder){
 						await ensure_metric_value_loaded(metric_key, subfolder)
 
-						var count = total_infodict[metric_key][subfolder][2]
+						var count = total_infodict[metric_key][subfolder][4]
 
 						depopulate_bar_graphs()
 						if (layergroup != null){
@@ -709,7 +731,7 @@
 						number_of_communities = count
 
 						populate_map(geojsons_dict[metric_key][subfolder], count, -1)
-						populate_bar_graphs(communities_dict[metric_key][subfolder])
+						populate_bar_graphs(communities_dict[metric_key][subfolder][0],communities_dict[metric_key][subfolder][1],communities_dict[metric_key][subfolder][2])
 					}
 
 					// -------------------- wiring --------------------
