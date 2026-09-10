@@ -145,6 +145,9 @@
 					<label for="community_menu">Select the number of communities:</label>
 					<select name="community_menu" id="community_menu">
 					</select>
+					<label for="bike">Display bike trails:</label>
+					<input type="checkbox" id="bike" name="bike" value="bike" checked>
+
 				</div>
 				<div id="help-and-links">
 					<a href="https://github.com/samuelytics/megatrail_project">Writeup and code for analysis</a>
@@ -199,10 +202,28 @@
 					var popup = L.popup();
 					var layergroup = null;
 					var bikegroup = null;
+					var bike_visible = true;
 
 					var bike_geojson = null;
 
 
+
+					function onCheckClick(e){
+						if (bike_visible == true){
+							bike_visible=false
+							bikegroup.eachLayer(function(layer){
+								layer.setStyle({opacity:0})
+							})
+						}
+						else {
+							bike_visible = true
+							bikegroup.eachLayer(function(layer){
+								layer.setStyle({opacity:0.7})
+							})
+						}
+					}
+					var check = d3.select("#bike")
+					check.on('click', onCheckClick)
 					function onMapClick(e){
 						if (generalized == false){
 							generalized = true
