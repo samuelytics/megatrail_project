@@ -183,6 +183,8 @@
 				  <script type="module">
 					var generalized = true;
 					var communities_layer = null;
+					var bike_map_layer = null;
+
 					var popup_layer = {};
 
 					
@@ -196,6 +198,10 @@
 					
 					var popup = L.popup();
 					var layergroup = null;
+					var bikegroup = null;
+
+					var bike_geojson = null;
+
 
 					function onMapClick(e){
 						if (generalized == false){
@@ -227,7 +233,7 @@
 							else{
 								layer.setStyle({opacity: 0.5})
 							}
-						})
+						 })
 					}
 					
 					function onEachFeature(feature,layer){
@@ -237,7 +243,7 @@
 					}
 					
 					var final_load_in = {}
-					const color_palettes = ["#000000","#228b22","#00008b","#b03060","#ff0000","#ff8800","#de0087","#33cc33","#33ccaa","#ff00ff","#6495ed"]
+					const color_palettes = ["#e67205","#228b22","#00008b","#b03060","#ff0000","#ff8800","#de0087","#33cc33","#33ccaa","#ff00ff","#6495ed"]
 					async function load_in_geojsons(community_nums,prefixes){
 						var out_dict = {}
 						var use_json = 0
@@ -271,7 +277,7 @@
 								opacity = 0.5
 							}
 							var color = color_palettes[i % color_palettes.length] 
-							var to_push = {"type":"Feature","geometry":input_jsons[i], "properties":{"color":color,"number":i,"opacity":opacity}}
+							var to_push = {"type":"Feature","geometry":input_jsons[i], "properties":{"color":color,"number":i,"opacity":opacity, "weight": 2}}
 							//console.log(prom)
 							feature_array.push(to_push)
 						}
@@ -279,6 +285,14 @@
 						return feature_array
 					}
 					
+
+					async function prepare_bike_geojson(use_bike_geojson){
+						var color = "#000000"
+						var opacity = 0.7
+						var feature_array = [{"type":"Feature","geometry": use_bike_geojson, "properties":{"color":color,"number":-2,"opacity":opacity, "weight": 7}}]
+						return feature_array
+					}
+
 					async function create_geojson(feature_array){
 						console.log("oh no, please, nooooo!")
 						var to_convert = {"type": "FeatureCollection", "features":feature_array}
@@ -288,13 +302,15 @@
 								return { 
 										color: feature.properties.color,
 										opacity: feature.properties.opacity,
-										number: feature.properties.number
+										number: feature.properties.number,
+										weight: feature.properties.weight
 										}
 							}
 						})
 						return out_geojson
 					}
 					
+
 					async function add_geojson(use_geojson){
 						use_geojson.addTo(layergroup);
 					}
@@ -733,6 +749,12 @@
 						populate_map(geojsons_dict[metric_key][subfolder], count, -1)
 						populate_bar_graphs(communities_dict[metric_key][subfolder][0],communities_dict[metric_key][subfolder][1],communities_dict[metric_key][subfolder][2])
 					}
+					// geojson load for bike
+
+					async function load_bike_geojson(){
+						var filename = 'geojsons/bike_lcc_infrastructure.geojson'
+						bike_geojson = await fetch(filename).then(response => response.json())
+					}
 
 					// -------------------- wiring --------------------
 
@@ -761,9 +783,19 @@
 					async function init(){
 						// Prefer "10_communities" on first load to match the site's
 						// previous default, otherwise fall back to the first option.
+						//console.log("warwee")
 						var options = await build_metric_options(current_metric)
 						var preferred = options.find(o => o.value === "10_communities") ? "10_communities" : null
 						var chosen_value = populate_community_menu_dom(options, preferred)
+
+						await load_bike_geojson()
+						var prepared_bike_geojson = await prepare_bike_geojson(bike_geojson)
+						bikegroup = L.layerGroup().addTo(map)
+						var use_bike_geojson = await create_geojson(prepared_bike_geojson)
+						bike_map_layer = use_bike_geojson
+						await bike_map_layer.addTo(bikegroup)
+						//use_bike_geojson.addTo(bike_map_layer)
+
 						if (chosen_value != null){
 							await load_and_render(current_metric, chosen_value)
 						}
